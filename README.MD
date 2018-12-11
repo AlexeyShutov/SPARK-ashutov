@@ -10,3 +10,4 @@
 
      Format: { positionId: Long, amount: BigDecimal, eventTime: Timestamp (Long) }.
  
+ Initial DataSet is included. Run DataGenerator to create a new DataSet.
