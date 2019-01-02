@@ -47,6 +47,11 @@ class InventoryStatisticsTest extends FunSuite with BeforeAndAfterAll {
       .select("maxAmount")
       .where($"warehouse" === "W-1").head().getDecimal(0)
     assert(88.88 === maxAmount.doubleValue(), "Wrong MAX amount")
+
+    val maxAmount2 = getWarehouseStatistics(warehouseDs, amountDs)
+      .select("maxAmount")
+      .where($"warehouse" === "W-2").head().getDecimal(0)
+    assert(30.0 === maxAmount.doubleValue(), "Wrong MAX amount")
   }
 
   test("'getWarehouseStatistics' should take proper MIN Amount") {
@@ -57,6 +62,7 @@ class InventoryStatisticsTest extends FunSuite with BeforeAndAfterAll {
   }
 
   test("'getWarehouseStatistics' should take proper Average Amount") {
+    //TODO: get rid of hardcoded values
     val avgAmount = getWarehouseStatistics(warehouseDs, amountDs)
       .select("avgAmount")
       .where($"warehouse" === "W-1").head().getDecimal(0)

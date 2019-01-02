@@ -19,11 +19,11 @@ object InventoryStatistics {
   def main(args: Array[String]): Unit = {
     try {
       val warehouses: DataFrame =
-        readToDs("src/main/resources/inventory/warehouse_data.csv",
-          fixedDecimalSchema(Encoders.product[WarehouseRow].schema))
+        readToDf("src/main/resources/inventory/warehouse_data.csv",
+          Encoders.product[WarehouseRow].schema)
       val amounts: DataFrame =
-        readToDs("src/main/resources/inventory/amount_data.csv",
-          fixedDecimalSchema(Encoders.product[AmountRow].schema))
+        readToDf("src/main/resources/inventory/amount_data.csv",
+          Encoders.product[AmountRow].schema)
 
       val warehouseDs = warehouses.as[WarehouseRow]
       val amountDs = amounts.as[AmountRow]
@@ -34,7 +34,7 @@ object InventoryStatistics {
     }
   }
 
-  def readToDs(resource: String, schema: StructType): DataFrame = {
+  def readToDf(resource: String, schema: StructType): DataFrame = {
     sparkSession.read
       .option("header", "true")
       .schema(schema)
