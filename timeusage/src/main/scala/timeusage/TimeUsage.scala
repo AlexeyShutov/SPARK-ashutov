@@ -5,6 +5,8 @@ import java.nio.file.Paths
 import org.apache.spark.sql._
 import org.apache.spark.sql.types._
 
+import scala.collection.mutable.ListBuffer
+
 /** Main class */
 object TimeUsage {
 
@@ -91,7 +93,23 @@ object TimeUsage {
     *      “t10”, “t12”, “t13”, “t14”, “t15”, “t16” and “t18” (those which are not part of the previous groups only).
     */
   def classifiedColumns(columnNames: List[String]): (List[Column], List[Column], List[Column]) = {
-    ???
+    val primaryPattern: String = "[t01|t03|t11|t1801|t1803]"
+    val workingPattern: String = "[t05|t1805]"
+    val otherPattern: String = "[t02|t04|t06|t07|t08|t09|t10|t12|t13|t14|t15|t16|t18]"
+    val primary = new ListBuffer[Column]
+    val working = new ListBuffer[Column]
+    val other = new ListBuffer[Column]
+
+    columnNames.foreach(colName => {
+      if (colName.matches(primaryPattern))
+        primary += new Column(colName)
+      else if (colName.matches(workingPattern))
+        other += new Column(colName)
+      else if (colName.matches(otherPattern))
+        other += new Column(colName)
+    })
+
+    (primary.toList, working.toList, other.toList)
   }
 
   /** @return a projection of the initial DataFrame such that all columns containing hours spent on primary needs
@@ -133,17 +151,34 @@ object TimeUsage {
     // more sense for our use case
     // Hint: you can use the `when` and `otherwise` Spark functions
     // Hint: don’t forget to give your columns the expected name with the `as` method
-    val workingStatusProjection: Column = ???
-    val sexProjection: Column = ???
-    val ageProjection: Column = ???
+    val workingStatusProjection: Column = when('telfs >= 1.0 && 'telfs < 3.0, "working")
+      .otherwise("not working")
+      .as("working")
+    val sexProjection: Column = when('tesex === 1.0, "male")
+      .otherwise("female")
+      .as("sex")
+    val ageProjection: Column = when('teage.between(15.0, 22.0), "young")
+      .when('teage.between(23.0, 55.0), "active")
+      .otherwise("elder")
+      .as("age")
 
     // Create columns that sum columns of the initial dataset
     // Hint: you want to create a complex column expression that sums other columns
     //       by using the `+` operator between them
     // Hint: don’t forget to convert the value to hours
-    val primaryNeedsProjection: Column = ???
-    val workProjection: Column = ???
-    val otherProjection: Column = ???
+    val primaryNeedsProjection: Column = primaryNeedsColumns
+      .reduce(_ + _)
+      .divide(60)
+      .as("primaryNeeds")
+    val workProjection: Column = workColumns
+      .reduce(_ + _)
+      .divide(60)
+      .as("work")
+    val otherProjection: Column = otherColumns
+      .reduce(_ + _)
+      .divide(60)
+      .as("other")
+
     df
       .select(workingStatusProjection, sexProjection, ageProjection, primaryNeedsProjection, workProjection, otherProjection)
       .where($"telfs" <= 4) // Discard people who are not in labor force
