@@ -202,7 +202,14 @@ object TimeUsage {
     *               Finally, the resulting DataFrame should be sorted by working status, sex and age.
     */
   def timeUsageGrouped(summed: DataFrame): DataFrame = {
-    ???
+    summed
+      .groupBy('working, 'sex, 'age)
+      .agg(
+        round(avg('primaryNeeds),1).as("primaryNeeds"),
+        round(avg('work),1).as("work"),
+        round(avg('other),1).as("other")
+      )
+      .orderBy('working, 'sex, 'age)
   }
 
   /**
@@ -219,7 +226,15 @@ object TimeUsage {
     * @param viewName Name of the SQL view to use
     */
   def timeUsageGroupedSqlQuery(viewName: String): String =
-    ???
+    s"SELECT working, " +
+      s"sex, " +
+      s"age, " +
+      s"ROUND(AVG(primaryNeeds),1) as primaryNeeds, " +
+      s"ROUND(AVG(work),1) as work,  ROUND(AVG(other),1) " +
+      s"as other " +
+      s"FROM $viewName " +
+      s"GROUP BY working, sex, age ORDER BY working, sex, age"
+
 
   /**
     * @return A `Dataset[TimeUsageRow]` from the “untyped” `DataFrame`
@@ -229,7 +244,7 @@ object TimeUsage {
     *                           cast them at the same time.
     */
   def timeUsageSummaryTyped(timeUsageSummaryDf: DataFrame): Dataset[TimeUsageRow] =
-    ???
+    timeUsageSummaryDf.as[TimeUsageRow]
 
   /**
     * @return Same as `timeUsageGrouped`, but using the typed API when possible
@@ -244,7 +259,20 @@ object TimeUsage {
     */
   def timeUsageGroupedTyped(summed: Dataset[TimeUsageRow]): Dataset[TimeUsageRow] = {
     import org.apache.spark.sql.expressions.scalalang.typed
-    ???
+
+    def round1(d:Double) = (d * 10).round / 10d
+
+    summed
+      .groupBy(
+        "working", "sex", "age"
+      ).agg(
+        avg("primaryNeeds"),
+        avg("work"),
+        avg("other")
+      ).map {
+      case ((working, sex, age), primaryNeeds, work, other)
+      => TimeUsageRow(working, sex, age,  round1(primaryNeeds), round1(work), round1(other))
+    }.orderBy('working, 'sex, 'age)
   }
 }
 
